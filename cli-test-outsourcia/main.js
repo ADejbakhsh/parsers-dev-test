@@ -1,7 +1,17 @@
-const sample1 = require("./samples/sample_1").default;
+const sample1 = require("./samples/sample_2").default;
 
 function arrayRemoveEmptyEntry(array) {
   return array.filter(e => e.match(/[a-zA-Z0-9]/));
+}
+
+function arrayRemoveExtraWhiteSpace(array) {
+  let cleanArray = []
+  //could be a function
+  array.forEach(element => {
+    element = element.replace(/\s+|\|/g, ' ')
+    cleanArray.push(element.replace(/^\s+|\s+$/g, ''))
+  });
+  return cleanArray
 }
 
 // j'aurais pu toute les mettre mais comme on ne peut mettre que du code dans le main je fait cours
@@ -33,12 +43,12 @@ function formatUberInvoice(invoice) {
 
 
 function fromToo(html) {
-  let trip_box = html.match(/<tr class="trip-box trip-details".*?<tr class="trip-box bottom"/gms)[0];
+  const tripBox = html.match(/<tr class="trip-box trip-details".*?<tr class="trip-box bottom"/gms)[0];
 
-  const departureTimeRaw = trip_box.match(/<span\s*?class="from time".*?<\/tr>/ms)[0]
+  const departureTimeRaw = tripBox.match(/<span\s*?class="from time".*?<\/tr>/ms)[0]
   const departureTime = departureTimeRaw.match(/(?<=>).*?(?=<\/span>)/ms)[0]
 
-  const arrivalTimeRaw = trip_box.match(/<span\s*?class="to time".*?<\/tr>/ms)[0]
+  const arrivalTimeRaw = tripBox.match(/<span\s*?class="to time".*?<\/tr>/ms)[0]
   const arrivalTime = arrivalTimeRaw.match(/(?<=>).*?(?=<\/span>)/ms)[0]
 
   const departureAddressRaw = departureTimeRaw.match(/(?<=<span\s*?class="address".*?>).*?(?=<\/span>)/ms)[0]
@@ -64,7 +74,7 @@ function detailBottomBox(html) {
     }
   }
 
- cleanArray = arrayRemoveEmptyEntry(tmp)
+  cleanArray = arrayRemoveEmptyEntry(tmp)
 
   return {
     distanceUnit: cleanArray[2],
@@ -72,7 +82,6 @@ function detailBottomBox(html) {
     duration: cleanArray[5],
   };
 }
-
 
 function fareDetails(html) {
   const fareDetails = html.match(/<table class="fare-details not-grid fare-breakdown".*?<\/table>/ms)[0]
@@ -90,7 +99,7 @@ function fareDetails(html) {
   console.log(cleanArray.length)
   if (cleanArray.length === 14) {
     distanceFee = cleanArray[2];
-      timeFee = cleanArray[4];
+    timeFee = cleanArray[4];
   }
 
   return {
@@ -101,19 +110,70 @@ function fareDetails(html) {
   }
 }
 
+function UberFranceInvoice(html) {
+  const midleBox = fromToo(html);
+  const bottomBox = detailBottomBox(html);
+  const fare = fareDetails(html);
+  const response = { ...midleBox, ...bottomBox, ...fare };
+  formatUberInvoice(response);
+  return response;
+}
+
+
+function fromTooSuisse(html) {
+  const tripBox = html.match(/normalABlock.*?<\/table>/ms)[0];
+
+  let tmp = tripBox.match(/(?<=<span\s*class="rideTime.*?>).*?(?=<|>)/gms)
+  tmp = arrayRemoveEmptyEntry(tmp)
+
+  let cleanArray = arrayRemoveExtraWhiteSpace(tmp)
+
+  return{
+    departureTime: cleanArray[0],
+    arrivalTime: cleanArray[2],
+    departureAddress: cleanArray[1],
+    arrivalAddress: cleanArray[3],
+  }
+}
+
+function detailBottomBoxSuisse(html) {
+  const detailBottomBox = html.match(/(?<=<table.*?class="tripTable.*?>).*?(?=<!-- close Driver information -->)/ms)[0]
+
+  const distanceUnitRaw = detailBottomBox.match(/(?<= class="tripInfoDescription.*?>).*?(?=<\/td>)/ms)[0]
+  const distanceUnit = distanceUnitRaw.replace(/\s+/g, '')
+
+  const distanceRaw = detailBottomBox.match(/(?<= class="tripInfo.*?>).*?(?=<\/td>)/ms)[0]
+  const distance = distanceRaw.replace(/\s+/g, '')
+
+  const duration = detailBottomBox.match(/[0-9]{2}:[0-9]{2}:[0-9]{2}/ms)[0]
+
+  return {
+    distanceUnit,
+    distance,
+    duration,
+  }
+}
+
+function UberSuisseInvoice(html) {
+  const midleBox = fromTooSuisse(html);
+  const bottomBox = detailBottomBoxSuisse(html);
+  
+  // console.log(bottomBox)
+
+ // return response;
+}
 
 function parseSample(sample) {
   const html = sample?.html
   if (!html)
     return { error: "no sample given" };
 
-  const midleBox = fromToo(html);
-  const bottomBox = detailBottomBox(html);
-  const fare = fareDetails(html);
-  const response = { ...midleBox, ...bottomBox, ...fare };
-  formatUberInvoice(response);
+  // pose problème en cas de voyage France Suisse
+  if (html.match(/France/))
+    return UberFranceInvoice(html);
+  if (html.match(/Suisse/))
+    return UberSuisseInvoice(html);
 
-  return response;
 }
 
 parseSample(sample1);
