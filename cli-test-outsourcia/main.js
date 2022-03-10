@@ -35,6 +35,22 @@ function currencyToAcronymen(currency) {
   }
 }
 
+// J'ai des doutes sur la façon dont cette fonction est faite
+function formatUberInvoice(invoice) {
+  invoice.distanceFee = parseFloat(invoice.distanceFee.replace(/,/g, '.'));
+  invoice.timeFee = parseFloat(invoice.timeFee.replace(/,/g, '.'));
+  invoice.totalPricePaid = parseFloat(invoice.totalPricePaid.replace(/,/g, '.'));
+  invoice.distance = parseFloat(invoice.distance.replace(/,/g, '.'));
+
+  if (invoice.departureTime.length <= 4)
+    invoice.departureTime = `0${invoice.departureTime}`;
+
+  if (invoice.arrivalTime.length <= 4)
+    invoice.arrivalTime = `0${invoice.arrivalTime}`;
+  
+}
+
+
 function fromToo(html) {
   let trip_box = html.match(/<tr class="trip-box trip-details".*?<tr class="trip-box bottom"/gms)[0];
 
@@ -86,10 +102,10 @@ function fareDetails(html) {
   const totalPricePaid = cleanArray[10].substring(1)
 
   return {
-    distanceFee: parseFloat(cleanArray[2]),
-    timeFee: parseFloat(cleanArray[4]),
+    distanceFee: cleanArray[2],
+    timeFee: cleanArray[4],
     currency,
-    totalPricePaid : parseFloat(totalPricePaid)
+    totalPricePaid
   }
 }
 
@@ -102,12 +118,10 @@ function parseSample(sample) {
   const midleBox = fromToo(html);
   const bottomBox = detailBottomBox(html);
   const fare = fareDetails(html);
-
-
   const response = { ...midleBox, ...bottomBox, ...fare };
-
-  console.log(response);
-  return {};
+  formatUberInvoice(response);
+  
+  return response;
 }
 
 parseSample(sample1);
