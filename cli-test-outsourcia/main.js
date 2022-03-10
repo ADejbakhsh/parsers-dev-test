@@ -13,7 +13,7 @@ interface Sample {
   totalPricePaid: double,
  */
 
-const sample1 = require("./samples/sample_1").default;
+const sample1 = require("./samples/sample_3").default;
 
 function arrayRemoveEmptyEntry(array) {
   return array.filter(e => e.match(/[a-zA-Z0-9]/));
@@ -21,18 +21,14 @@ function arrayRemoveEmptyEntry(array) {
 
 // j'aurais pu toute les mettre mais comme on ne peut mettre que du code dans le main je fait cours
 function currencyToAcronymen(currency) {
-  switch (currency) {
-    case "€":
-      return "EUR";
-    case "$":
-      return "USD";
-    case "£":
-      return "GBP";
-    case "¥":
-      return "JPY";
-    case "₽":
-      return "RUB";
-  }
+  if(currency.match(/CHF/))
+    return "CHF"
+  if (currency.match(/\$/))
+    return "USD"
+  if (currency.match(/£/))
+    return "GBP"
+  if (currency.match(/€/))
+    return "EUR"
 }
 
 // J'ai des doutes sur la façon dont cette fonction est faite
@@ -75,6 +71,14 @@ function detailBottomBox(html) {
 
   let cleanArray = []
 
+  if (!tmp) {
+    return {
+      distance: "0",
+      duration: "",
+      distanceFee: "0",
+    }   
+  }
+
   tmp.forEach(e => {
     if (e.match(/[a-zA-Z0-9]/)) {
       cleanArray.push(e)
@@ -96,10 +100,9 @@ function fareDetails(html) {
 
   const cleanArray = arrayRemoveEmptyEntry(tmp)
 
-  // TODO: en cas de francs CHF
-  const currency = currencyToAcronymen(cleanArray[6][0])
+  const currency = currencyToAcronymen(cleanArray[cleanArray.length-1])
+  const totalPricePaid = cleanArray[cleanArray.length-1].match(/[0-9]+\.{0,1}[0-9]{0,2}/sm)[0]
 
-  const totalPricePaid = cleanArray[10].substring(1)
 
   return {
     distanceFee: cleanArray[2],
@@ -124,7 +127,7 @@ function parseSample(sample) {
   return response;
 }
 
-parseSample(sample1);
+//parseSample(sample1);
 
 
 exports.parseSample = parseSample;
