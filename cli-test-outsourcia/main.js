@@ -16,21 +16,41 @@ interface Sample {
 const sample1 = require("./samples/sample_1").default;
 
 function fromToo(html) {
-  let trip_box = html.match(/<tr class="trip-box trip-details".*?<tr class="trip-box bottom"/gms);
-  
-  const departureTimeRaw = trip_box[0].match(/<span\s*?class="from time".*?<\/tr>/ms)[0]
-  const departureTime  = departureTimeRaw.match(/(?<=>).*?(?=<\/span>)/ms)[0]
+  let trip_box = html.match(/<tr class="trip-box trip-details".*?<tr class="trip-box bottom"/gms)[0];
 
-  const arrivalTimeRaw = trip_box[0].match(/<span\s*?class="to time".*?<\/tr>/ms)[0]
-  const arrivalTime  = arrivalTimeRaw.match(/(?<=>).*?(?=<\/span>)/ms)[0]
+  const departureTimeRaw = trip_box.match(/<span\s*?class="from time".*?<\/tr>/ms)[0]
+  const departureTime = departureTimeRaw.match(/(?<=>).*?(?=<\/span>)/ms)[0]
+
+  const arrivalTimeRaw = trip_box.match(/<span\s*?class="to time".*?<\/tr>/ms)[0]
+  const arrivalTime = arrivalTimeRaw.match(/(?<=>).*?(?=<\/span>)/ms)[0]
 
   const departureAddressRaw = departureTimeRaw.match(/(?<=<span\s*?class="address".*?>).*?(?=<\/span>)/ms)[0]
-  const departureAddress  = departureAddressRaw.replace(/\s+/g, ' ')
+  const departureAddress = departureAddressRaw.replace(/\s+/g, ' ')
 
   const arrivalAddressRaw = arrivalTimeRaw.match(/(?<=<span\s*?class="address".*?>).*?(?=<\/span>)/ms)[0]
-  const arrivalAddress  = arrivalAddressRaw.replace(/\s+/g, ' ')
+  const arrivalAddress = arrivalAddressRaw.replace(/\s+/g, ' ')
 
-  return {departureTime, arrivalTime, departureAddress, arrivalAddress};
+  return { departureTime, arrivalTime, departureAddress, arrivalAddress };
+}
+
+
+function detailBottomBox(html) {
+  const detailBottomBox = html.match(/<tr class="trip-box bottom".*?<\/tr>/gms)[0]
+  const tmp = detailBottomBox.match(/(?<=<td\sclass="trip-box-data".*?>).*?(?=>|<)/gs)
+  
+  let cleanArray = []
+  
+  tmp.forEach(e => {
+    if (e.match(/[a-zA-Z0-9]/)) {
+      cleanArray.push(e)
+    }
+  })
+
+  return {
+    distanceUnit: cleanArray[2],
+    distance: cleanArray[3],
+    duration: cleanArray[5],
+  };
 }
 
 
@@ -39,8 +59,9 @@ function parseSample(sample) {
   if (!html)
     return { error: "no sample given" };
 
-
   console.log(fromToo(html));
+  console.log(detailBottomBox(html));
+  
 
 
 
