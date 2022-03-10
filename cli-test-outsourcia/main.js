@@ -1,12 +1,9 @@
-const sample1 = require("./samples/sample_2").default;
-
 function arrayRemoveEmptyEntry(array) {
   return array.filter(e => e.match(/[a-zA-Z0-9]/));
 }
 
 function arrayRemoveExtraWhiteSpace(array) {
   let cleanArray = []
-  //could be a function
   array.forEach(element => {
     element = element.replace(/\s+|\|/g, ' ')
     cleanArray.push(element.replace(/^\s+|\s+$/g, ''))
@@ -26,7 +23,7 @@ function currencyToAcronymen(currency) {
     return "EUR"
 }
 
-// J'ai des doutes sur la façon dont cette fonction est faite
+// J'ai des doutes si cette fonction est propre
 function formatUberInvoice(invoice) {
   invoice.distanceFee = parseFloat(invoice.distanceFee.replace(/,/g, '.'));
   invoice.timeFee = parseFloat(invoice.timeFee.replace(/,/g, '.'));
@@ -96,7 +93,6 @@ function fareDetails(html) {
   //clairement pas la bonne façon de faire mais j'aurais le temps de finire en 5h sinons.
   let distanceFee = "0";
   let timeFee = "0";
-  console.log(cleanArray.length)
   if (cleanArray.length === 14) {
     distanceFee = cleanArray[2];
     timeFee = cleanArray[4];
@@ -116,7 +112,6 @@ function UberFranceInvoice(html) {
   const fare = fareDetails(html);
   const response = { ...midleBox, ...bottomBox, ...fare };
   formatUberInvoice(response);
-  console.log(response)
   return response;
 }
 
@@ -165,7 +160,6 @@ function fareDetailsSuisse(html) {
 
   const currency = currencyToAcronymen(cleanArray[cleanArray.length - 1])
   const totalPricePaid = cleanArray[cleanArray.length - 1].match(/[0-9]+,{0,1}[0-9]{0,2}/sm)[0]
-  console.log(cleanArray[cleanArray.length - 1], 'totalPricePaid')
 
   let distanceFee = "0";
   let timeFee = "0";
@@ -188,25 +182,23 @@ function UberSuisseInvoice(html) {
   const fare = fareDetailsSuisse(html);
   const response = { ...midleBox, ...bottomBox, ...fare };
   formatUberInvoice(response);
-  console.log(response)
   return response;
 }
 
 function parseSample(sample) {
-  debugger
   const html = sample?.html
-  if (!html)
-    return { error: "no sample given" };
-
-  // A changé avec le mail de l'envoyeur
-  if (html.match(/France/))
+  const from = sample?.headers?.from
+  if (!html || !from) {
+    return { error: "no sample given or invalide format" };
+  }
+  
+  if (from.match(/receipt/))
     return UberFranceInvoice(html);
-  if (html.match(/Suisse/))
+  // regex a revoir ⬇️
+  if (from.match(/suisse/))
     return UberSuisseInvoice(html);
 
 }
-
-parseSample(sample1);
 
 
 exports.parseSample = parseSample;
