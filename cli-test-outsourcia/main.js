@@ -15,6 +15,26 @@ interface Sample {
 
 const sample1 = require("./samples/sample_1").default;
 
+function arrayRemoveEmptyEntry(array) {
+  return array.filter(e => e.match(/[a-zA-Z0-9]/));
+}
+
+// j'aurais pu toute les mettre mais comme on ne peut mettre que du code dans le main je fait cours
+function currencyToAcronymen(currency) {
+  switch (currency) {
+    case "€":
+      return "EUR";
+    case "$":
+      return "USD";
+    case "£":
+      return "GBP";
+    case "¥":
+      return "JPY";
+    case "₽":
+      return "RUB";
+  }
+}
+
 function fromToo(html) {
   let trip_box = html.match(/<tr class="trip-box trip-details".*?<tr class="trip-box bottom"/gms)[0];
 
@@ -33,13 +53,12 @@ function fromToo(html) {
   return { departureTime, arrivalTime, departureAddress, arrivalAddress };
 }
 
-
 function detailBottomBox(html) {
   const detailBottomBox = html.match(/<tr class="trip-box bottom".*?<\/tr>/gms)[0]
   const tmp = detailBottomBox.match(/(?<=<td\sclass="trip-box-data".*?>).*?(?=>|<)/gs)
-  
+
   let cleanArray = []
-  
+
   tmp.forEach(e => {
     if (e.match(/[a-zA-Z0-9]/)) {
       cleanArray.push(e)
@@ -54,18 +73,40 @@ function detailBottomBox(html) {
 }
 
 
+function fareDetails(html) {
+  const fareDetails = html.match(/<table class="fare-details not-grid fare-breakdown".*?<\/table>/ms)[0]
+
+  const tmp = fareDetails.match(/(?<=<td class="price".*?>).*?(?=>|<)/gms)
+
+  const cleanArray = arrayRemoveEmptyEntry(tmp)
+
+  // TODO: en cas de francs CHF
+  const currency = currencyToAcronymen(cleanArray[6][0])
+
+  const totalPricePaid = cleanArray[10].substring(1)
+
+  return {
+    distanceFee: parseFloat(cleanArray[2]),
+    timeFee: parseFloat(cleanArray[4]),
+    currency,
+    totalPricePaid : parseFloat(totalPricePaid)
+  }
+}
+
+
 function parseSample(sample) {
   const html = sample?.html
   if (!html)
     return { error: "no sample given" };
 
-  console.log(fromToo(html));
-  console.log(detailBottomBox(html));
-  
+  const midleBox = fromToo(html);
+  const bottomBox = detailBottomBox(html);
+  const fare = fareDetails(html);
 
 
+  const response = { ...midleBox, ...bottomBox, ...fare };
 
-
+  console.log(response);
   return {};
 }
 
