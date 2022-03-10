@@ -116,6 +116,7 @@ function UberFranceInvoice(html) {
   const fare = fareDetails(html);
   const response = { ...midleBox, ...bottomBox, ...fare };
   formatUberInvoice(response);
+  console.log(response)
   return response;
 }
 
@@ -128,7 +129,7 @@ function fromTooSuisse(html) {
 
   let cleanArray = arrayRemoveExtraWhiteSpace(tmp)
 
-  return{
+  return {
     departureTime: cleanArray[0],
     arrivalTime: cleanArray[2],
     departureAddress: cleanArray[1],
@@ -154,21 +155,50 @@ function detailBottomBoxSuisse(html) {
   }
 }
 
+function fareDetailsSuisse(html) {
+  // scraper avec des commentaire me semble douteux
+  const fareDetails = html.match(/(?<=<!-- put fare information in here -->).*?(?=<!-- end dropdown -->)/ms)[0]
+
+  let tmp = fareDetails.match(/(?<=class="fareText.*?>).*?(?=<|>)/gms)
+  tmp = arrayRemoveEmptyEntry(tmp)
+  const cleanArray = arrayRemoveExtraWhiteSpace(tmp)
+
+  const currency = currencyToAcronymen(cleanArray[cleanArray.length - 1])
+  const totalPricePaid = cleanArray[cleanArray.length - 1].match(/[0-9]+,{0,1}[0-9]{0,2}/sm)[0]
+  console.log(cleanArray[cleanArray.length - 1], 'totalPricePaid')
+
+  let distanceFee = "0";
+  let timeFee = "0";
+  if (cleanArray.length === 12) {
+    distanceFee = cleanArray[3];
+    timeFee = cleanArray[5];
+  }
+
+  return {
+    distanceFee,
+    timeFee,
+    currency,
+    totalPricePaid
+  }
+}
+
 function UberSuisseInvoice(html) {
   const midleBox = fromTooSuisse(html);
   const bottomBox = detailBottomBoxSuisse(html);
-  
-  // console.log(bottomBox)
-
- // return response;
+  const fare = fareDetailsSuisse(html);
+  const response = { ...midleBox, ...bottomBox, ...fare };
+  formatUberInvoice(response);
+  console.log(response)
+  return response;
 }
 
 function parseSample(sample) {
+  debugger
   const html = sample?.html
   if (!html)
     return { error: "no sample given" };
 
-  // pose problème en cas de voyage France Suisse
+  // A changé avec le mail de l'envoyeur
   if (html.match(/France/))
     return UberFranceInvoice(html);
   if (html.match(/Suisse/))
