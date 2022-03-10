@@ -1,19 +1,4 @@
-/*
-interface Sample {
-  arrivalAddress: string,
-  arrivalTime: "string,
-  currency: string,
-  departureAddress: string,
-  departureTime: string,
-  distance: double,
-  distanceFee: double,
-  distanceUnit: string,
-  duration: string,
-  timeFee: double,
-  totalPricePaid: double,
- */
-
-const sample1 = require("./samples/sample_3").default;
+const sample1 = require("./samples/sample_1").default;
 
 function arrayRemoveEmptyEntry(array) {
   return array.filter(e => e.match(/[a-zA-Z0-9]/));
@@ -21,7 +6,7 @@ function arrayRemoveEmptyEntry(array) {
 
 // j'aurais pu toute les mettre mais comme on ne peut mettre que du code dans le main je fait cours
 function currencyToAcronymen(currency) {
-  if(currency.match(/CHF/))
+  if (currency.match(/CHF/))
     return "CHF"
   if (currency.match(/\$/))
     return "USD"
@@ -43,7 +28,7 @@ function formatUberInvoice(invoice) {
 
   if (invoice.arrivalTime.length <= 4)
     invoice.arrivalTime = `0${invoice.arrivalTime}`;
-  
+
 }
 
 
@@ -75,15 +60,11 @@ function detailBottomBox(html) {
     return {
       distance: "0",
       duration: "",
-      distanceFee: "0",
-    }   
+      distanceUnit: "",
+    }
   }
 
-  tmp.forEach(e => {
-    if (e.match(/[a-zA-Z0-9]/)) {
-      cleanArray.push(e)
-    }
-  })
+ cleanArray = arrayRemoveEmptyEntry(tmp)
 
   return {
     distanceUnit: cleanArray[2],
@@ -97,16 +78,24 @@ function fareDetails(html) {
   const fareDetails = html.match(/<table class="fare-details not-grid fare-breakdown".*?<\/table>/ms)[0]
 
   const tmp = fareDetails.match(/(?<=<td class="price".*?>).*?(?=>|<)/gms)
-
   const cleanArray = arrayRemoveEmptyEntry(tmp)
 
-  const currency = currencyToAcronymen(cleanArray[cleanArray.length-1])
-  const totalPricePaid = cleanArray[cleanArray.length-1].match(/[0-9]+\.{0,1}[0-9]{0,2}/sm)[0]
+  const currency = currencyToAcronymen(cleanArray[cleanArray.length - 1])
+  const totalPricePaid = cleanArray[cleanArray.length - 1].match(/[0-9]+\.{0,1}[0-9]{0,2}/sm)[0]
 
+
+  //clairement pas la bonne façon de faire mais j'aurais le temps de finire en 5h sinons.
+  let distanceFee = "0";
+  let timeFee = "0";
+  console.log(cleanArray.length)
+  if (cleanArray.length === 14) {
+    distanceFee = cleanArray[2];
+      timeFee = cleanArray[4];
+  }
 
   return {
-    distanceFee: cleanArray[2],
-    timeFee: cleanArray[4],
+    distanceFee,
+    timeFee,
     currency,
     totalPricePaid
   }
@@ -123,11 +112,11 @@ function parseSample(sample) {
   const fare = fareDetails(html);
   const response = { ...midleBox, ...bottomBox, ...fare };
   formatUberInvoice(response);
-  
+
   return response;
 }
 
-//parseSample(sample1);
+parseSample(sample1);
 
 
 exports.parseSample = parseSample;
